@@ -41,7 +41,6 @@ app.post("/login", (req, res) => {
                     password: "",
                     mobile: "",
                     email: "",
-                    rid: "",
                     token,
                 },
                 meta: {
@@ -60,7 +59,6 @@ app.post("/login", (req, res) => {
                     mobile: "181xxxxx327",
                     email: "admin@xx.com",
                     id: 1,
-                    rid: 30,
                     token, token
                 },
                 meta: {
@@ -83,7 +81,7 @@ app.get("/users", (req, res) => {
         let { pageNum, pageSize, query } = req.query
         let queryRes = []
         // 用户状态
-        
+
         // console.log(pageNum, pageSize)
         let start = (pageNum - 1) * pageSize
 
@@ -194,7 +192,7 @@ app.all("/users/:id", (req, res) => {
                     msg: "删除成功llll"
                 }
             })
-        } else {
+        } else if (req.method == "PUT") {
             // 1获取参数判空，
             let { email, mobile, id } = req.body
             if (!email || !mobile) {
@@ -215,6 +213,12 @@ app.all("/users/:id", (req, res) => {
                     msg: "修改用户信息成功"
                 }
             })
+        } else if (req.method == "GET") {
+            let id = req.params.id
+            let ridRes = await handleDB(res, "user", "find", "查询数据库出错", `id=${id}`)
+            res.send({
+                rid: ridRes[0].rid
+            })
         }
 
     })()
@@ -226,11 +230,11 @@ app.all("/users/:uId/state/:type", (req, res) => {
         // 1 获取请求路径中用户id 和state 
         let { url } = req
         let str = url.split("/")
-        let id = str[2] 
-        let mg_state=str[4]=="true" ? Boolean(true):Boolean() //布尔类型在mysql中为tinyint 类型，当然此处也可以保存为字符串类型
-        console.log(url,id,mg_state)
+        let id = str[2]
+        let mg_state = str[4] == "true" ? Boolean(true) : Boolean() //布尔类型在mysql中为tinyint 类型，当然此处也可以保存为字符串类型
+        console.log(url, id, mg_state)
         // 2 更新数据库 的mg_state
-        await handleDB(res,"user","update","更新数据库出错",`id=${id}`,{mg_state})
+        await handleDB(res, "user", "update", "更新数据库出错", `id=${id}`, { mg_state })
         //3 返回数据
         res.send({
             meta: {
@@ -242,6 +246,39 @@ app.all("/users/:uId/state/:type", (req, res) => {
 
 })
 
+// 角色请求
+app.get("/roles", (req, res) => {
+    (async function () {
+        let data = await handleDB(res, "roles", "find", "查询数据库出错")
+        res.send(data)
+    })()
+
+})
+
+app.all('/users/:id/role', (req, res) => {
+    (async function () {
+        let { body: { rid }, url } = req
+        let id = url.split("/")[2]
+        if (!rid) {
+            res.send({
+                meta: {
+                    msg: "设置失败",
+                    status: 000
+                }
+            })
+            return
+        }
+        console.log(rid)
+        console.log(id)
+        await handleDB(res, "user", "update", "更新数据库出错", `id=${id}`, {rid})
+        res.send({
+            meta: {
+                msg: "设置角色成功",
+                status: 200
+            }
+        })
+    })()
+})
 
 // 时间格式
 function getcurrentDate() {
